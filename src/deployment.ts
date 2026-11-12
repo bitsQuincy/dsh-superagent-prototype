@@ -84,9 +84,13 @@ function parsed<T>(schema: z.ZodType<T>, text: string): T | undefined {
   return result.success ? result.data : undefined
 }
 /** Verify the agent's GitHub CLI identity and push access to the configured repository. */
-export async function resolveDeployment(machine: Machine, github: unknown, probe: Probe, path = process.env.PATH ?? ''): Promise<Deployment> {
+// [redmine-fork] 新增 `enabled` 参数：GitHub Source 关闭时跳过全部探测，返回占位身份，
+// 使「Redmine（或其它外部代码平台）+ 无 GitHub」的部署能通过启动检查。占位 cli 为空串，
+// writeEnvironment/verifyEnvironment 据此跳过 gh shim 与 github.com 凭据配置。
+export async function resolveDeployment(machine: Machine, github: unknown, probe: Probe, path = process.env.PATH ?? '', enabled = true): Promise<Deployment> {
   const { stateDir } = machine
   const accounts = GithubAccountsSchema.parse(github ?? {})
+  if (!enabled) return { ...machine, repository: '', github: { cli: '', login: 'agent', noreply: '' } }
   const remote = accounts.repository
   if (!remote) throw new SetupError('repositoryUnset')
   if (!accounts.cli) throw new SetupError('agentCliUnset')

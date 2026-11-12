@@ -10,6 +10,11 @@
     - id: dsh-superagent-feishu
       name: dsh-superagent/feishu-watch
       disabled: true
+    # [redmine-fork] Optional Redmine Source（内网任务平台，只读 intake；对需求方沟通走邮件、回写走 taskq）。
+    # 启用后需在 Settings → Source 配置 baseUrl / projectId / agentLogin，并给宿主环境提供 Redmine API Key。
+    - id: dsh-superagent-redmine
+      name: dsh-superagent/redmine-watch
+      disabled: true
     # The agent preset of every Executor Session (WORKER_PRESET in src/app/sessions.ts); the main Session has its own, below.
     # It is DSH's `standard` preset with only what a worker needs, and a shell whose foreground command moves to a background job
     # after 5 seconds, so a long command does not hold back a person's message, which the Session takes at its next step. Left

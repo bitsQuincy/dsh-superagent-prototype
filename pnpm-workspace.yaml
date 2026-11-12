@@ -1,0 +1,4 @@
+# [redmine-fork] 本机 Windows + pnpm junction 怪癖的规避：tsdown 依赖 ansis 经 junction 解析失败。
+# hoisted 扁平布局让依赖实体化，绕开该问题。仅影响本机构建，不改上游行为。
+# （pnpm 11 优先读本文件的 nodeLinker，.npmrc 的 node-linker 被忽略）
+nodeLinker: hoisted
