@@ -67,7 +67,9 @@ export class Commands {
   withSignal(signal?: AbortSignal): Commands { return signal ? new Commands(this.resolved, this.environment, AbortSignal.any([this.signal, signal])) : this }
   async run(program: string, args: string[], cwd?: string): Promise<string> {
     try {
-      const { stdout } = await exec(program, args, { cwd, signal: this.signal, timeout: TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024,
+      // [windows-port] Node refuses to spawn `.cmd`/`.bat` directly; route a batch CLI through cmd.exe with argv kept separate.
+      const argv = process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(program) ? ['cmd.exe', '/d', '/c', program, ...args] : [program, ...args]
+      const { stdout } = await exec(argv[0]!, argv.slice(1), { cwd, signal: this.signal, timeout: TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024,
         env: { ...process.env, ...this.environment, GH_PROMPT_DISABLED: '1', LARKSUITE_CLI_NO_UPDATE_NOTIFIER: '1', LARKSUITE_CLI_NO_SKILLS_NOTIFIER: '1' } })
       return stdout
     } catch (error) { throw commandError(error, program) }
