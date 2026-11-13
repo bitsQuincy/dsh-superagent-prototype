@@ -26,6 +26,10 @@ export const workerSessionId = (ticketId: string): string => `worker-${ticketId}
 export const ticketOfSession = (sessionId: string): string | undefined => sessionId.startsWith('worker-') ? sessionId.slice('worker-'.length) : undefined
 /** Maximum runtime for a workspace prepare command. */
 const PREPARE_TIMEOUT_MS = 10 * 60_000
+/** [windows-port] Windows has no `sh`; prepare commands are cmd.exe syntax on that platform and POSIX shell syntax elsewhere. */
+export const prepareArgv = (command: string): string[] => process.platform === 'win32'
+  ? ['cmd.exe', '/d', '/s', '/c', command]
+  : ['sh', '-c', command]
 /** Maximum transient retry attempts for a launch or worker turn, and the initial backoff before resuming a turn. */
 const TRANSIENT_TRIES = 3, TRANSIENT_BACKOFF_MS = 15_000
 /** How long a worker's background work may run on after its turn ended before it is stopped and the worker reported waiting. */
@@ -251,7 +255,7 @@ export class DshExecutor implements Executor {
     const env = Object.fromEntries(this.host.environment(ticket).map(variable => [variable.key, variable.value]))
     // Enforce a timeout so a hung prepare command (such as on a credential prompt) fails the ticket instead of holding a worker slot indefinitely.
     const signal = AbortSignal.any([this.host.lifetime, AbortSignal.timeout(PREPARE_TIMEOUT_MS)])
-    if (command) await runAsWorker(this.host.context.subprocess, ['sh', '-c', command], dirname(directory), signal, env)
+    if (command) await runAsWorker(this.host.context.subprocess, prepareArgv(command), dirname(directory), signal, env)
       .catch(async (error: unknown) => {
         // Remove an empty directory left by a failed prepare command so a later retry does not treat it as already prepared.
         await rmdir(directory).catch(() => { /* Absent, or holding what the command wrote, which the output explains. */ })
