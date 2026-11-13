@@ -87,11 +87,16 @@ export const EvalConfigSchema = z.object({
 }).strict()
 const CommandNameSchema = z.string().regex(/^[A-Za-z0-9._-]+$/).refine(name => name !== '.' && name !== '..', 'Not a command name')
   .refine(name => !WORKER_COMMANDS.includes(name), `${WORKER_COMMANDS.join(', ')} cannot be blocked`)
+/** [windows-port] Drive-qualified/UNC on Windows, leading slash on POSIX; a bare `\dir` is drive-relative, not absolute. */
+const absolutePath = (path: string): boolean => process.platform === 'win32'
+  ? /^(?:[A-Za-z]:[\\/]|\\\\|\/)/.test(path)
+  : path.startsWith('/')
 /** Executor settings: worker model, concurrency, ticket directory root (empty defaults to `<stateDir>/work`), `prepare` command, and blocked commands. */
 export const ExecutorConfigSchema = z.object({
   model: RoleModelSchema.nullable().default(null),
   maxWorkers: z.number().int().min(LIMITS.maxWorkers.min).max(LIMITS.maxWorkers.max).default(3),
-  directory: z.string().trim().refine(path => path === '' || path.startsWith('/'), 'An absolute path, or empty for <stateDir>/work').default(''),
+  // [windows-port] Drive-qualified and UNC paths are absolute on Windows; POSIX keeps the leading-slash form.
+  directory: z.string().trim().refine(path => path === '' || absolutePath(path), 'An absolute path, or empty for <stateDir>/work').default(''),
   prepare: z.string().max(LIMITS.prepareCommand).default(''),
   blockedCommands: z.array(CommandNameSchema).default([]),
 }).strict()
