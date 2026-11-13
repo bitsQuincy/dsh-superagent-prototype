@@ -1,0 +1,6 @@
+# [windows-port] POSIX scripts and source stay LF even in a Windows checkout;
+# batch and PowerShell files need CRLF so cmd.exe and PowerShell read them correctly.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
